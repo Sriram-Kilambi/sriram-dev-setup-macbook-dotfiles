@@ -122,12 +122,6 @@ unset __conda_setup
 
 export PATH="$HOME/.local/bin:$PATH"
 
-alias githubMCP='npx -y @smithery/cli@latest run @smithery-ai/github --config "{\"githubPersonalAccessToken\":\"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\"}"'
-alias firecrawlMCP='npx -y @smithery/cli@latest run @mendableai/mcp-server-firecrawl --config "{\"fireCrawlApiKey\":\"fc-2f5940f8c5aa4391aa88741e73630b56\"}"'
-alias seqThinkMCP='npx -y @smithery/cli@latest run @smithery-ai/server-sequential-thinking --config "{}"'
-alias browserToolsServer='npx @agentdeskai/browser-tools-server@1.2.0'
-alias browserToolsAgent='npx @agentdeskai/browser-tools-mcp@1.2.0'
-
 alias startMCP="~/startup.sh"
 alias listAll="ls -la"
 
