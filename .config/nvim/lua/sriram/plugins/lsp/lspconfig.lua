@@ -5,13 +5,15 @@ return {
     "hrsh7th/cmp-nvim-lsp",
     { "antosha417/nvim-lsp-file-operations", config = true },
     { "folke/neodev.nvim", opts = {} },
+    "williamboman/mason.nvim",
+    "williamboman/mason-lspconfig.nvim",
   },
   config = function()
     local cmp_nvim_lsp = require("cmp_nvim_lsp")
     local capabilities = cmp_nvim_lsp.default_capabilities()
     local keymap = vim.keymap
 
-    -- ✅ Replace deprecated sign_define() with new config
+    -- Diagnostics: modern sign config
     vim.diagnostic.config({
       signs = {
         text = {
@@ -23,6 +25,7 @@ return {
       },
     })
 
+    -- Keymaps on LSP attach
     vim.api.nvim_create_autocmd("LspAttach", {
       group = vim.api.nvim_create_augroup("UserLspConfig", {}),
       callback = function(ev)
@@ -69,49 +72,62 @@ return {
       end,
     })
 
-    -- Setup mason and mason-lspconfig
+    -- Mason + mason-lspconfig
     require("mason").setup()
-
     require("mason-lspconfig").setup({
       ensure_installed = { "lua_ls", "svelte", "graphql", "emmet_ls" },
       automatic_installation = false,
-      automatic_enable = true, -- new in v2
+      -- v2 behavior: automatically calls vim.lsp.enable() for installed servers
+      automatic_enable = true,
     })
 
-    -- ✅ New native LSP setup (Neovim 0.11+)
+    ---------------------------------------------------------------------------
+    -- Server configs (Neovim 0.11+): vim.lsp.config('name', opts)
+    ---------------------------------------------------------------------------
+
+    -- Lua
     vim.lsp.config("lua_ls", {
       capabilities = capabilities,
       settings = {
         Lua = {
           diagnostics = { globals = { "vim" } },
           completion = { callSnippet = "Replace" },
+          workspace = { checkThirdParty = false },
         },
       },
     })
 
-    -- ❗ Manual setup for servers not migrated to vim.lsp.config
-    local lspconfig = require("lspconfig")
-
-    lspconfig["svelte"].setup({
+    -- Svelte
+    vim.lsp.config("svelte", {
       capabilities = capabilities,
       on_attach = function(client, bufnr)
+        -- Inform the server when TS/JS files change (Svelte's special hook)
         vim.api.nvim_create_autocmd("BufWritePost", {
+          buffer = bufnr,
           pattern = { "*.js", "*.ts" },
           callback = function(ctx)
-            client.notify("$/onDidChangeTsOrJsFile", { uri = ctx.match })
+            local uri = vim.uri_from_fname(ctx.file)
+            client.notify("$/onDidChangeTsOrJsFile", { uri = uri })
           end,
         })
       end,
     })
 
-    lspconfig["graphql"].setup({
+    -- GraphQL
+    vim.lsp.config("graphql", {
       capabilities = capabilities,
       filetypes = { "graphql", "gql", "svelte", "typescriptreact", "javascriptreact" },
     })
 
-    lspconfig["emmet_ls"].setup({
+    -- Emmet
+    vim.lsp.config("emmet_ls", {
       capabilities = capabilities,
       filetypes = { "html", "typescriptreact", "javascriptreact", "css", "sass", "scss", "less", "svelte" },
     })
+
+    -- NOTE:
+    -- We do NOT call require('lspconfig').XYZ.setup() anymore.
+    -- We also don't call vim.lsp.enable() manually here because
+    -- mason-lspconfig v2 `automatic_enable = true` already enables installed servers.
   end,
 }
